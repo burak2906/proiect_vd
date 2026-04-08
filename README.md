@@ -38,3 +38,9 @@ python -m uvicorn main:app
   "rainy_weather": "No",
   "user_id": 5000
 }
+
+
+
+npx create-react-app frontend
+
+npm install axios react-plotly.js plotly.js tailwindcss

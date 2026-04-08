@@ -13,9 +13,15 @@ from sklearn.preprocessing import StandardScaler
 
 import models, schemas, database
 from database import engine, get_db
-
+from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI(title="Food Delivery Analysis System - Master Edition")
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"], # Permite accesul de la React
+    allow_credentials=True,
+    allow_methods=["*"], # Permite toate metodele (GET, POST, etc.)
+    allow_headers=["*"], # Permite toți header-ii
+)
 # Creare tabele
 models.Base.metadata.create_all(bind=engine)
 
