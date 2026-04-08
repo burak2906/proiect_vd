@@ -18,7 +18,7 @@ class User(Base):
 class Order(Base):
     __tablename__ = "orders"
 
-    order_id = Column(Integer, primary_key=True, index=True)
+    order_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id")) # legatura catre tabelul users
     
     # Coloanele din dataset

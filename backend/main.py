@@ -29,13 +29,24 @@ def root():
 def read_orders(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return db.query(models.Order).offset(skip).limit(limit).all()
 
+from sqlalchemy import func
+
 @app.post("/orders/", response_model=schemas.OrderOut)
 def create_order(order: schemas.OrderCreate, db: Session = Depends(get_db)):
+    max_id = db.query(func.max(models.Order.order_id)).scalar()
+    next_id = (max_id or 0) + 1
+    
     db_order = models.Order(**order.model_dump())
-    db.add(db_order)
-    db.commit()
-    db.refresh(db_order)
-    return db_order
+    db_order.order_id = next_id
+    
+    try:
+        db.add(db_order)
+        db.commit()
+        db.refresh(db_order)
+        return db_order
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Eroare la salvare: {str(e)}")
 
 @app.get("/orders/{id}", response_model=schemas.OrderOut)
 def read_order(id: int, db: Session = Depends(get_db)):
@@ -68,11 +79,24 @@ def delete_order(id: int, db: Session = Depends(get_db)):
 
 @app.post("/users/", response_model=schemas.UserOut)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    db_user = models.User(full_name=user.full_name, email=user.email, city=user.city)
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return db_user
+    max_id = db.query(func.max(models.User.id)).scalar()
+    next_id = (max_id or 0) + 1
+    
+    db_user = models.User(
+        id=next_id,
+        full_name=user.full_name,
+        email=user.email,
+        city=user.city
+    )
+    
+    try:
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+        return db_user
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Eroare la crearea utilizatorului: {str(e)}")
 
 @app.get("/users/", response_model=List[schemas.UserOut])
 def read_users(db: Session = Depends(get_db)):
@@ -96,9 +120,17 @@ def delete_user(id: int, db: Session = Depends(get_db)):
     if not db_user:
         raise HTTPException(status_code=404, detail="Utilizatorul nu există")
     # se poate sterge un user doar daca nu mai are comenzi
+    has_orders = db.query(models.Order).filter(models.Order.user_id == id).first()
+    
+    if has_orders:
+        raise HTTPException(
+            status_code=400, 
+            detail="Nu se poate șterge: Utilizatorul are comenzi în istoric. Ștergeți întâi comenzile."
+        )
+    
     db.delete(db_user)
     db.commit()
-    return {"message": f"Utilizatorul {id} a fost eliminat"}
+    return {"message": f"Utilizatorul {id} a fost eliminat cu succes"}
 
 # PATCH RATING
 
@@ -267,4 +299,3 @@ def get_mood_impact_budget(db: Session = Depends(get_db)):
         },
         "interpretare": "Aceste scoruri arata cat de mult 'trage' fiecare factor comanda sub pragul de medie."
     }
-
