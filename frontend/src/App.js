@@ -4,6 +4,7 @@ import './App.css';
 import Sidebar from './layout/Sidebar';
 import Topbar from './layout/Topbar';
 
+import KeyInsights from './features/analytics/KeyInsights';
 import BusinessSummary from './features/analytics/BusinessSummary';
 import DecisionTreeChart from './features/analytics/DecisionTreeChart';
 import RepeatOrderFactors from './features/analytics/RepeatOrderFactors';
@@ -58,14 +59,17 @@ function App() {
 
         <main className="dashboard-content">
           {activePage === 'Overview' && (
-            <>
-              <BusinessSummary filters={filters} />
-              <div className="dashboard-grid two-columns">
-                <RepeatOrderFactors filters={filters} />
-                <ValueDrivers filters={filters} />
-              </div>
-            </>
-          )}
+              <>
+                <BusinessSummary filters={filters} />
+                <div className="dashboard-grid single-column">
+                  <KeyInsights filters={filters} />
+                </div>
+                <div className="dashboard-grid two-columns">
+                  <RepeatOrderFactors filters={filters} />
+                  <ValueDrivers filters={filters} />
+                </div>
+              </>
+            )}
 
           {activePage === 'Customers' && (
             <>

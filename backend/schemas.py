@@ -223,3 +223,11 @@ class BusinessSummaryOut(BaseModel):
     repeat_order_rate: float
     rainy_order_share: float
     weekend_order_share: float
+
+from typing import Optional
+
+class KeyInsightItem(BaseModel):
+    title: str
+    highlight: str
+    detail: str
+    value: Optional[str] = None

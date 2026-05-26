@@ -281,6 +281,79 @@ def business_summary(
         "weekend_order_share": round(float(df["is_weekend"].mean() * 100), 2),
     }
 
+@app.get("/analytics/key-insights", response_model=List[schemas.KeyInsightItem])
+def key_insights(
+    day_type: Optional[str] = Query(None),
+    order_time: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    df = load_orders_dataframe(db)
+    df = apply_filters(df, day_type, order_time)
+
+    insights = []
+
+    city_repeat = (
+        df.groupby("city")["is_repeat"]
+        .mean()
+        .sort_values(ascending=False)
+        .head(2)
+    )
+
+    top_cities = ", ".join(city_repeat.index.tolist())
+    top_city_value = f"{round(float(city_repeat.iloc[0] * 100), 2)}%"
+
+    insights.append({
+        "title": "Top cities",
+        "highlight": f"{top_cities} au cea mai mare rată de repeat order",
+        "detail": "Orașele cu cei mai mulți clienți recurenți pot fi prioritizate pentru campanii de retenție.",
+        "value": top_city_value
+    })
+
+    rainy_stats = df.groupby("rainy_weather")["order_value"].mean()
+    if "Yes" in rainy_stats.index and "No" in rainy_stats.index:
+        rainy_diff = round(float(rainy_stats["No"] - rainy_stats["Yes"]), 2)
+        insights.append({
+            "title": "Weather impact",
+            "highlight": "Pe vreme ploioasă, valoarea medie a comenzii este ușor mai mică",
+            "detail": f"Diferența medie observată în date este de aproximativ {rainy_diff}.",
+            "value": str(rainy_diff)
+        })
+
+    mood_order = df.groupby("mood")["order_value"].mean().sort_values(ascending=False)
+    top_mood = mood_order.index[0]
+    top_mood_value = round(float(mood_order.iloc[0]), 2)
+
+    insights.append({
+        "title": "Customer mood",
+        "highlight": f"Clienții cu mood '{top_mood}' au cea mai mare valoare medie a comenzii",
+        "detail": "Segmentarea după contextul emoțional poate fi utilă pentru oferte și recomandări personalizate.",
+        "value": str(top_mood_value)
+    })
+
+    mood_rating = df.groupby("mood")["rating_given"].mean().sort_values(ascending=False)
+    top_rating_mood = mood_rating.index[0]
+    top_rating_value = round(float(mood_rating.iloc[0]), 2)
+
+    insights.append({
+        "title": "Mood vs rating",
+        "highlight": f"Clienții '{top_rating_mood}' oferă cel mai mare rating mediu",
+        "detail": "Acest tipar poate ajuta la înțelegerea contextelor asociate cu satisfacția ridicată.",
+        "value": str(top_rating_value)
+    })
+
+    restaurant_avg = df.groupby("restaurant_type")["order_value"].mean().sort_values(ascending=False)
+    best_restaurant_type = restaurant_avg.index[0]
+    best_restaurant_value = round(float(restaurant_avg.iloc[0]), 2)
+
+    insights.append({
+        "title": "Restaurant tier",
+        "highlight": f"Segmentul '{best_restaurant_type}' are cea mai mare valoare medie a comenzii",
+        "detail": "Tipul de restaurant influențează direct valoarea bonului și strategiile comerciale.",
+        "value": str(best_restaurant_value)
+    })
+
+    return insights
+
 
 @app.get("/analytics/decision-tree-repeat-order", response_model=schemas.DecisionTreeAnalyticsOut)
 def decision_tree_repeat_order(
