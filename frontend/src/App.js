@@ -1,16 +1,27 @@
 import React from 'react';
 import './App.css';
-import KMeansChart from './features/analytics/K-Means';
+
+import BusinessSummary from './features/analytics/BusinessSummary';
+import DecisionTreeChart from './features/analytics/DecisionTreeChart';
+import RepeatOrderFactors from './features/analytics/RepeatOrderFactors';
+import LowRatingRisk from './features/analytics/LowRatingRisk';
+import DeliveryTimeModel from './features/analytics/DeliveryTimeModel';
+import ValueDrivers from './features/analytics/ValueDrivers';
 
 function App() {
   return (
     <div className="App">
-      <header className="App-header" style={{ padding: '20px', backgroundColor: '#282c34', color: 'white' }}>
-        <h1>Dashboard Proiect VD</h1>
+      <header className="App-header">
+        <h1>Dashboard Analiză Food Delivery</h1>
       </header>
-      
-      <main style={{ padding: '20px' }}>
-        <KMeansChart />
+
+      <main>
+        <BusinessSummary />
+        <DecisionTreeChart />
+        <RepeatOrderFactors />
+        <LowRatingRisk />
+        <DeliveryTimeModel />
+        <ValueDrivers />
       </main>
     </div>
   );
