@@ -1,14 +1,14 @@
 import React from 'react';
 
-const Sidebar = () => {
-  const menuItems = [
-    'Overview',
-    'Customers',
-    'Ratings',
-    'Delivery',
-    'Predictions'
-  ];
+const MENU_ITEMS = [
+  { key: 'Overview',    label: 'Overview',    icon: '▦' },
+  { key: 'Customers',   label: 'Customers',   icon: '👤' },
+  { key: 'Ratings',     label: 'Ratings',     icon: '★' },
+  { key: 'Delivery',    label: 'Delivery',    icon: '🚚' },
+  { key: 'Predictions', label: 'Predictions', icon: '◎' },
+];
 
+const Sidebar = ({ activePage, onNavigate }) => {
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">
@@ -20,9 +20,14 @@ const Sidebar = () => {
       </div>
 
       <nav className="sidebar-nav">
-        {menuItems.map((item) => (
-          <button key={item} className={`nav-item ${item === 'Overview' ? 'active' : ''}`}>
-            {item}
+        {MENU_ITEMS.map(({ key, label, icon }) => (
+          <button
+            key={key}
+            className={`nav-item ${activePage === key ? 'active' : ''}`}
+            onClick={() => onNavigate(key)}
+          >
+            <span className="nav-icon">{icon}</span>
+            {label}
           </button>
         ))}
       </nav>
