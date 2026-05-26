@@ -530,24 +530,39 @@ def value_drivers(db: Session = Depends(get_db)):
 # =========================
 # PREDICTIONS
 # =========================
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import LabelEncoder
+import threading
+
+# Cache global — antrenat o singură dată
+_repeat_model = None
+_repeat_columns = None
+_model_lock = threading.Lock()
+
+REPEAT_FEATURE_COLS = [
+    "age", "order_value", "delivery_fee", "time_taken_to_order",
+    "order_time", "day_type", "discount_applied", "restaurant_type",
+    "mood", "hunger_level", "company", "rainy_weather", "cuisine", "meal_type"
+]
+
+def get_repeat_model(db: Session):
+    global _repeat_model, _repeat_columns
+    with _model_lock:
+        if _repeat_model is None:
+            df = load_orders_dataframe(db)
+            X = encode_features(df, REPEAT_FEATURE_COLS)
+            y = df["is_repeat"]
+            model = LogisticRegression(max_iter=2000, class_weight="balanced")
+            model.fit(X, y)
+            _repeat_model = model
+            _repeat_columns = list(X.columns)
+    return _repeat_model, _repeat_columns
+
 
 @app.post("/predict/repeat-order", response_model=schemas.RepeatOrderPredictionOut)
 def predict_repeat_order(payload: schemas.RepeatOrderPredictionInput, db: Session = Depends(get_db)):
-    df = load_orders_dataframe(db)
-
-    feature_cols = [
-        "age", "order_value", "delivery_fee", "time_taken_to_order",
-        "order_time", "day_type", "discount_applied", "restaurant_type",
-        "mood", "hunger_level", "company", "rainy_weather", "cuisine", "meal_type"
-    ]
-
-    X = encode_features(df, feature_cols)
-    y = df["is_repeat"]
-
-    model = LogisticRegression(max_iter=2000, class_weight="balanced")
-    model.fit(X, y)
-
-    input_encoded = prepare_single_input(payload.model_dump(), list(X.columns))
+    model, columns = get_repeat_model(db)
+    input_encoded = prepare_single_input(payload.model_dump(), columns)
 
     probability = model.predict_proba(input_encoded)[0][1]
     predicted_class = int(model.predict(input_encoded)[0])
@@ -559,29 +574,38 @@ def predict_repeat_order(payload: schemas.RepeatOrderPredictionInput, db: Sessio
     }
 
 
+_delivery_model = None
+_delivery_columns = None
+
+DELIVERY_FEATURE_COLS = [
+    "age", "order_value", "delivery_fee",
+    "order_time", "day_type", "discount_applied",
+    "restaurant_type", "mood", "hunger_level",
+    "company", "rainy_weather", "cuisine", "meal_type"
+]
+
+def get_delivery_model(db: Session):
+    global _delivery_model, _delivery_columns
+    with _model_lock:
+        if _delivery_model is None:
+            df = load_orders_dataframe(db)
+            X = encode_features(df, DELIVERY_FEATURE_COLS)
+            y = df["time_taken_to_order"]
+            model = RandomForestRegressor(
+                n_estimators=150,
+                max_depth=10,
+                min_samples_leaf=20,
+                random_state=42
+            )
+            model.fit(X, y)
+            _delivery_model = model
+            _delivery_columns = list(X.columns)
+    return _delivery_model, _delivery_columns
+
+
 @app.post("/predict/delivery-time", response_model=schemas.DeliveryTimePredictionOut)
 def predict_delivery_time(payload: schemas.DeliveryTimePredictionInput, db: Session = Depends(get_db)):
-    df = load_orders_dataframe(db)
-
-    feature_cols = [
-        "age", "order_value", "delivery_fee",
-        "order_time", "day_type", "discount_applied",
-        "restaurant_type", "mood", "hunger_level",
-        "company", "rainy_weather", "cuisine", "meal_type"
-    ]
-
-    X = encode_features(df, feature_cols)
-    y = df["time_taken_to_order"]
-
-    model = RandomForestRegressor(
-        n_estimators=150,
-        max_depth=10,
-        min_samples_leaf=20,
-        random_state=42
-    )
-    model.fit(X, y)
-
-    input_encoded = prepare_single_input(payload.model_dump(), list(X.columns))
+    model, columns = get_delivery_model(db)
+    input_encoded = prepare_single_input(payload.model_dump(), columns)
     prediction = model.predict(input_encoded)[0]
-
     return {"predicted_time_taken_to_order": round(float(prediction), 2)}
