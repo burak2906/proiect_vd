@@ -1,57 +1,64 @@
 import React, { useEffect, useState } from 'react';
-import Plot from 'react-plotly.js';
 import api from '../../services/api';
+import SectionCard from '../../components/SectionCard';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip
+} from 'recharts';
 
 const RepeatOrderFactors = () => {
-  const [data, setData] = useState(null);
+  const [chartData, setChartData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get('/analytics/repeat-order-probability')
-      .then(res => setData(res.data))
-      .catch(err => console.error('Eroare logistic regression:', err));
+    // Folosim endpointul care returneaza top_features din decision tree
+    api.get('/analytics/decision-tree-repeat-order')
+      .then((res) => {
+        // backend: res.data.top_features = [{ feature, importance }, ...]
+        const formatted = (res.data.top_features || []).map((item) => ({
+          factor: item.feature,
+          importance: Number((item.importance * 100).toFixed(2))
+        }));
+        formatted.sort((a, b) => b.importance - a.importance);
+        setChartData(formatted);
+      })
+      .catch((err) => {
+        console.error('Eroare repeat order factors:', err);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
-  if (!data) return <div className="loading">Se încarcă factorii repeat order...</div>;
-
-  const positive = data.factors_increasing_repeat_probability || [];
-  const negative = data.factors_decreasing_repeat_probability || [];
-
   return (
-    <div className="dashboard-card">
-      <h2>Factori care influențează repeat order</h2>
-      <p className="subtitle">Interpretare Logistic Regression prin odds ratio</p>
-
-      <Plot
-        data={[
-          {
-            x: positive.map(item => item.odds_ratio),
-            y: positive.map(item => item.feature),
-            type: 'bar',
-            orientation: 'h',
-            name: 'Cresc probabilitatea',
-            marker: { color: '#16a34a' }
-          },
-          {
-            x: negative.map(item => item.odds_ratio),
-            y: negative.map(item => item.feature),
-            type: 'bar',
-            orientation: 'h',
-            name: 'Scad probabilitatea',
-            marker: { color: '#dc2626' }
-          }
-        ]}
-        layout={{
-          barmode: 'group',
-          autosize: true,
-          height: 500,
-          margin: { l: 240, r: 20, t: 20, b: 50 },
-          xaxis: { title: 'Odds Ratio' },
-          yaxis: { automargin: true }
-        }}
-        config={{ responsive: true }}
-        style={{ width: '100%' }}
-      />
-    </div>
+    <SectionCard
+      title="Repeat-order factors"
+      subtitle="Cei mai importanți factori pentru comenzile recurente"
+    >
+      {loading ? (
+        <div className="loading-box">Se încarcă analiza factorilor...</div>
+      ) : chartData.length === 0 ? (
+        <div className="loading-box">Nu sunt suficiente date pentru a arăta factorii</div>
+      ) : (
+        <div className="chart-wrap">
+          <BarChart
+            width={700}
+            height={320}
+            data={chartData}
+            layout="vertical"
+            margin={{ top: 10, right: 20, left: 10, bottom: 10 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis type="number" />
+            <YAxis dataKey="factor" type="category" width={180} />
+            <Tooltip formatter={(value) => [`${value}%`, 'Importanță']} />
+            <Bar dataKey="importance" fill="#0f766e" radius={[0, 8, 8, 0]} />
+          </BarChart>
+        </div>
+      )}
+    </SectionCard>
   );
 };
 

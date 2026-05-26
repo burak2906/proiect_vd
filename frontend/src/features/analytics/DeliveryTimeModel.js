@@ -1,68 +1,98 @@
 import React, { useEffect, useState } from 'react';
-import Plot from 'react-plotly.js';
 import api from '../../services/api';
+import SectionCard from '../../components/SectionCard';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ScatterChart,
+  Scatter
+} from 'recharts';
 
 const DeliveryTimeModel = () => {
-  const [data, setData] = useState(null);
+  const [metrics, setMetrics] = useState(null);
+  const [drivers, setDrivers] = useState([]);
+  const [sample, setSample] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     api.get('/analytics/delivery-time-model')
-      .then(res => setData(res.data))
-      .catch(err => console.error('Eroare delivery time model:', err));
+      .then((res) => {
+        setMetrics(res.data.metrics || null);
+
+        const formattedDrivers = (res.data.top_time_drivers || []).map((item) => ({
+          factor: item.feature,
+          impact: Number((item.importance_mean * 100).toFixed(2))
+        }));
+
+        setDrivers(formattedDrivers);
+        setSample(res.data.actual_vs_predicted_sample || []);
+      })
+      .catch((err) => console.error('Eroare delivery model:', err))
+      .finally(() => setLoading(false));
   }, []);
 
-  if (!data) return <div className="loading">Se încarcă modelul de timp...</div>;
-
-  const sample = data.actual_vs_predicted_sample || [];
-  const drivers = data.top_time_drivers || [];
-
   return (
-    <div className="dashboard-card">
-      <h2>Model pentru timpul comenzii</h2>
-      <p className="subtitle">Predicție și factori principali ai duratei</p>
+    <SectionCard
+      title="Delivery-time model"
+      subtitle="Model pentru estimarea timpului de procesare a comenzii"
+    >
+      {loading ? (
+        <div className="loading-box">Se încarcă modelul de timp...</div>
+      ) : !metrics ? (
+        <div className="loading-box">Nu sunt disponibile metricile modelului</div>
+      ) : (
+        <>
+          <div className="tree-metrics">
+            <div className="mini-metric">
+              <span>MAE</span>
+              <strong>{metrics.mae}</strong>
+            </div>
+            <div className="mini-metric">
+              <span>RMSE</span>
+              <strong>{metrics.rmse}</strong>
+            </div>
+            <div className="mini-metric">
+              <span>R²</span>
+              <strong>{metrics.r2}</strong>
+            </div>
+          </div>
 
-      <Plot
-        data={[
-          {
-            x: sample.map(item => item.actual),
-            y: sample.map(item => item.predicted),
-            mode: 'markers',
-            type: 'scatter',
-            marker: { color: '#0ea5e9', size: 9 }
-          }
-        ]}
-        layout={{
-          autosize: true,
-          height: 400,
-          margin: { l: 60, r: 20, t: 20, b: 60 },
-          xaxis: { title: 'Timp real' },
-          yaxis: { title: 'Timp prezis' }
-        }}
-        config={{ responsive: true }}
-        style={{ width: '100%' }}
-      />
+          <div className="chart-wrap">
+            <BarChart
+              width={700}
+              height={320}
+              data={drivers}
+              layout="vertical"
+              margin={{ top: 10, right: 20, left: 10, bottom: 10 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis type="number" />
+              <YAxis dataKey="factor" type="category" width={180} />
+              <Tooltip formatter={(value) => [`${value}%`, 'Impact']} />
+              <Bar dataKey="impact" fill="#0f766e" radius={[0, 8, 8, 0]} />
+            </BarChart>
+          </div>
 
-      <Plot
-        data={[
-          {
-            x: drivers.map(item => item.importance_mean),
-            y: drivers.map(item => item.feature),
-            type: 'bar',
-            orientation: 'h',
-            marker: { color: '#f59e0b' }
-          }
-        ]}
-        layout={{
-          autosize: true,
-          height: 450,
-          margin: { l: 240, r: 20, t: 20, b: 50 },
-          xaxis: { title: 'Importanță' },
-          yaxis: { automargin: true }
-        }}
-        config={{ responsive: true }}
-        style={{ width: '100%' }}
-      />
-    </div>
+          <div className="chart-wrap" style={{ marginTop: '18px' }}>
+            <ScatterChart
+              width={700}
+              height={280}
+              margin={{ top: 20, right: 20, bottom: 20, left: 10 }}
+            >
+              <CartesianGrid />
+              <XAxis type="number" dataKey="actual" name="Actual" />
+              <YAxis type="number" dataKey="predicted" name="Predicted" />
+              <Tooltip cursor={{ strokeDasharray: '3 3' }} />
+              <Scatter data={sample} fill="#1d4ed8" />
+            </ScatterChart>
+          </div>
+        </>
+      )}
+    </SectionCard>
   );
 };
 
