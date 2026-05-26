@@ -354,6 +354,93 @@ def key_insights(
 
     return insights
 
+@app.get("/analytics/avg-order-value-by-cuisine", response_model=List[schemas.SimpleChartItem])
+def avg_order_value_by_cuisine(
+    day_type: Optional[str] = Query(None),
+    order_time: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    df = load_orders_dataframe(db)
+    df = apply_filters(df, day_type, order_time)
+
+    grouped = (
+        df.groupby("cuisine")["order_value"]
+        .mean()
+        .sort_values(ascending=False)
+        .round(2)
+    )
+
+    return [
+        {"label": label, "value": float(value)}
+        for label, value in grouped.items()
+    ]
+
+@app.get("/analytics/avg-order-value-by-city", response_model=List[schemas.SimpleChartItem])
+def avg_order_value_by_city(
+    day_type: Optional[str] = Query(None),
+    order_time: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    df = load_orders_dataframe(db)
+    df = apply_filters(df, day_type, order_time)
+
+    grouped = (
+        df.groupby("city")["order_value"]
+        .mean()
+        .sort_values(ascending=False)
+        .round(2)
+    )
+
+    return [
+        {"label": label, "value": float(value)}
+        for label, value in grouped.items()
+    ]
+
+@app.get("/analytics/avg-order-value-by-mood", response_model=List[schemas.SimpleChartItem])
+def avg_order_value_by_mood(
+    day_type: Optional[str] = Query(None),
+    order_time: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    df = load_orders_dataframe(db)
+    df = apply_filters(df, day_type, order_time)
+
+    grouped = (
+        df.groupby("mood")["order_value"]
+        .mean()
+        .sort_values(ascending=False)
+        .round(2)
+    )
+
+    return [
+        {"label": label, "value": float(value)}
+        for label, value in grouped.items()
+    ]
+
+@app.get("/analytics/avg-rating-by-repeat-order", response_model=List[schemas.SimpleChartItem])
+def avg_rating_by_repeat_order(
+    day_type: Optional[str] = Query(None),
+    order_time: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    df = load_orders_dataframe(db)
+    df = apply_filters(df, day_type, order_time)
+
+    grouped = (
+        df.groupby("is_repeat_order")["rating_given"]
+        .mean()
+        .round(2)
+    )
+
+    label_map = {
+        "Yes": "Repeat",
+        "No": "No Repeat"
+    }
+
+    return [
+        {"label": label_map.get(label, label), "value": float(value)}
+        for label, value in grouped.items()
+    ]
 
 @app.get("/analytics/decision-tree-repeat-order", response_model=schemas.DecisionTreeAnalyticsOut)
 def decision_tree_repeat_order(

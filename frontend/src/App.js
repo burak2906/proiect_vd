@@ -4,6 +4,10 @@ import './App.css';
 import Sidebar from './layout/Sidebar';
 import Topbar from './layout/Topbar';
 
+import AvgOrderValueByCuisine from './features/analytics/AvgOrderValueByCuisine';
+import AvgOrderValueByCity from './features/analytics/AvgOrderValueByCity';
+import AvgOrderValueByMood from './features/analytics/AvgOrderValueByMood';
+import AvgRatingByRepeatOrder from './features/analytics/AvgRatingByRepeatOrder';
 import KeyInsights from './features/analytics/KeyInsights';
 import BusinessSummary from './features/analytics/BusinessSummary';
 import DecisionTreeChart from './features/analytics/DecisionTreeChart';
@@ -58,12 +62,25 @@ function App() {
         />
 
         <main className="dashboard-content">
+
           {activePage === 'Overview' && (
               <>
                 <BusinessSummary filters={filters} />
+
                 <div className="dashboard-grid single-column">
                   <KeyInsights filters={filters} />
                 </div>
+
+                <div className="dashboard-grid two-columns">
+                  <AvgOrderValueByCuisine filters={filters} />
+                  <AvgOrderValueByCity filters={filters} />
+                </div>
+
+                <div className="dashboard-grid two-columns">
+                  <AvgOrderValueByMood filters={filters} />
+                  <AvgRatingByRepeatOrder filters={filters} />
+                </div>
+
                 <div className="dashboard-grid two-columns">
                   <RepeatOrderFactors filters={filters} />
                   <ValueDrivers filters={filters} />

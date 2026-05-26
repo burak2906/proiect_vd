@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Literal, List, Dict
+from typing import Optional
 
 
 # =========================
@@ -224,10 +225,12 @@ class BusinessSummaryOut(BaseModel):
     rainy_order_share: float
     weekend_order_share: float
 
-from typing import Optional
-
 class KeyInsightItem(BaseModel):
     title: str
     highlight: str
     detail: str
     value: Optional[str] = None
+
+class SimpleChartItem(BaseModel):
+    label: str
+    value: float
