@@ -52,7 +52,7 @@ const RepeatOrderFactors = () => {
           >
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis type="number" />
-            <YAxis dataKey="factor" type="category" width={180} />
+            <YAxis dataKey="factor" type="category" width={300} />
             <Tooltip formatter={(value) => [`${value}%`, 'Importanță']} />
             <Bar dataKey="importance" fill="#0f766e" radius={[0, 8, 8, 0]} />
           </BarChart>

@@ -363,30 +363,32 @@ def repeat_order_probability(db: Session = Depends(get_db)):
         "factors_decreasing_repeat_probability": negative_df.head(12).to_dict(orient="records")
     }
 
-
-@app.get("/analytics/low-rating-risk", response_model=schemas.LowRatingRiskOut)
-def low_rating_risk(db: Session = Depends(get_db)):
+@app.get("/analytics/high-rating-drivers", response_model=schemas.HighRatingDriversOut)
+def high_rating_drivers(db: Session = Depends(get_db)):
     df = load_orders_dataframe(db)
 
+    df["high_rating"] = (df["rating_given"] >= 4).astype(int)
+
     feature_cols = [
-        "age", "order_value", "delivery_fee", "time_taken_to_order",
-        "order_time", "day_type", "discount_applied", "restaurant_type",
-        "mood", "hunger_level", "company", "rainy_weather", "cuisine", "meal_type"
+        "order_value", "delivery_fee", "time_taken_to_order",
+        "order_time", "day_type", "discount_applied",
+        "restaurant_type", "cuisine", "meal_type",
+        "company", "rainy_weather", "mood", "hunger_level"
     ]
 
     X = encode_features(df, feature_cols)
-    y = df["low_rating"]
+    y = df["high_rating"]
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42, stratify=y
     )
 
     clf = RandomForestClassifier(
-        n_estimators=150,
-        max_depth=8,
-        min_samples_leaf=20,
+        n_estimators=250,
+        max_depth=10,
+        min_samples_leaf=10,
         random_state=42,
-        class_weight="balanced_subsample"
+        class_weight="balanced"
     )
     clf.fit(X_train, y_train)
 
@@ -404,8 +406,8 @@ def low_rating_risk(db: Session = Depends(get_db)):
     }).sort_values("importance_mean", ascending=False)
 
     return {
-        "model": "RandomForestClassifier pentru risc de rating mic",
-        "target": "rating_given <= 2",
+        "model": "RandomForestClassifier pentru high rating",
+        "target": "rating_given >= 4",
         "metrics": {
             "accuracy": round(float(accuracy_score(y_test, y_pred)), 4),
             "precision": round(float(precision_score(y_test, y_pred, zero_division=0)), 4),
@@ -413,12 +415,11 @@ def low_rating_risk(db: Session = Depends(get_db)):
             "f1_score": round(float(f1_score(y_test, y_pred, zero_division=0)), 4),
         },
         "confusion_matrix": {
-            "labels": ["Not Low Rating", "Low Rating"],
+            "labels": ["Not High Rating", "High Rating"],
             "matrix": cm.tolist()
         },
         "top_risk_factors": importance_df.head(12).to_dict(orient="records")
     }
-
 
 @app.get("/analytics/delivery-time-model", response_model=schemas.DeliveryTimeAnalyticsOut)
 def delivery_time_model(db: Session = Depends(get_db)):

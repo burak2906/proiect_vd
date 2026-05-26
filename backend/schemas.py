@@ -189,7 +189,7 @@ class LogisticAnalyticsOut(BaseModel):
     factors_decreasing_repeat_probability: List[LogisticFactorItem]
 
 
-class LowRatingRiskOut(BaseModel):
+class HighRatingDriversOut(BaseModel):
     model: str
     target: str
     metrics: ModelMetricsClassification

@@ -7,7 +7,7 @@ import Topbar from './layout/Topbar';
 import BusinessSummary from './features/analytics/BusinessSummary';
 import DecisionTreeChart from './features/analytics/DecisionTreeChart';
 import RepeatOrderFactors from './features/analytics/RepeatOrderFactors';
-import LowRatingRisk from './features/analytics/LowRatingRisk';
+import LowRatingRisk from './features/analytics/HighRatingDrivers';
 import DeliveryTimeModel from './features/analytics/DeliveryTimeModel';
 import ValueDrivers from './features/analytics/ValueDrivers';
 
