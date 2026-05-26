@@ -24,23 +24,45 @@ const PAGE_TITLES = {
 
 function App() {
   const [activePage, setActivePage] = useState('Overview');
+  const [dayFilter, setDayFilter] = useState('');
+  const [timeFilter, setTimeFilter] = useState('');
+
   const { eyebrow, title } = PAGE_TITLES[activePage];
+  const filters = { dayFilter, timeFilter };
+
+  const handleExport = () => {
+    window.print();
+  };
 
   return (
     <div className="app-shell">
-      <Sidebar activePage={activePage} onNavigate={setActivePage} />
+      <Sidebar
+        activePage={activePage}
+        onNavigate={(page) => {
+          setActivePage(page);
+          setDayFilter('');
+          setTimeFilter('');
+        }}
+      />
 
       <div className="app-main">
-        <Topbar eyebrow={eyebrow} title={title} />
+        <Topbar
+          eyebrow={eyebrow}
+          title={title}
+          dayFilter={dayFilter}
+          timeFilter={timeFilter}
+          onDayFilter={setDayFilter}
+          onTimeFilter={setTimeFilter}
+          onExport={handleExport}
+        />
 
         <main className="dashboard-content">
-
           {activePage === 'Overview' && (
             <>
-              <BusinessSummary />
+              <BusinessSummary filters={filters} />
               <div className="dashboard-grid two-columns">
-                <RepeatOrderFactors />
-                <ValueDrivers />
+                <RepeatOrderFactors filters={filters} />
+                <ValueDrivers filters={filters} />
               </div>
             </>
           )}
@@ -48,7 +70,7 @@ function App() {
           {activePage === 'Customers' && (
             <>
               <div className="dashboard-grid single-column">
-                <DecisionTreeChart />
+                <DecisionTreeChart filters={filters} />
               </div>
               <div className="dashboard-grid single-column">
                 <RepeatOrderPredictionForm />
@@ -58,14 +80,14 @@ function App() {
 
           {activePage === 'Ratings' && (
             <div className="dashboard-grid single-column">
-              <HighRatingDrivers />
+              <HighRatingDrivers filters={filters} />
             </div>
           )}
 
           {activePage === 'Delivery' && (
             <>
               <div className="dashboard-grid single-column">
-                <DeliveryTimeModel />
+                <DeliveryTimeModel filters={filters} />
               </div>
               <div className="dashboard-grid single-column">
                 <DeliveryTimePredictionForm />
@@ -79,7 +101,6 @@ function App() {
               <DeliveryTimePredictionForm />
             </div>
           )}
-
         </main>
       </div>
     </div>

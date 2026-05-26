@@ -2,18 +2,24 @@ import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
 import SectionCard from '../../components/SectionCard';
 
-const DecisionTreeChart = () => {
+const DecisionTreeChart = ({ filters = {} }) => {
   const [tree, setTree] = useState('');
   const [metrics, setMetrics] = useState(null);
 
   useEffect(() => {
-    api.get('/analytics/decision-tree-repeat-order')
+    setMetrics(null);
+
+    const params = {};
+    if (filters.dayFilter)  params.day_type   = filters.dayFilter;
+    if (filters.timeFilter) params.order_time = filters.timeFilter;
+
+    api.get('/analytics/decision-tree-repeat-order', { params })
       .then((res) => {
         setTree(res.data.tree_rules);
         setMetrics(res.data.metrics);
       })
       .catch((err) => console.error('Eroare arbore:', err));
-  }, []);
+  }, [filters.dayFilter, filters.timeFilter]);
 
   return (
     <SectionCard

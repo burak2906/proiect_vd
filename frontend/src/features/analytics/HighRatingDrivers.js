@@ -2,13 +2,20 @@ import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
 import SectionCard from '../../components/SectionCard';
 
-const HighRatingDrivers = () => {
+const HighRatingDrivers = ({ filters = {} }) => {
   const [items, setItems] = useState([]);
   const [metrics, setMetrics] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    api.get('/analytics/high-rating-drivers')
+    setMetrics(null);
+    setError('');
+
+    const params = {};
+    if (filters.dayFilter)  params.day_type   = filters.dayFilter;
+    if (filters.timeFilter) params.order_time = filters.timeFilter;
+
+    api.get('/analytics/high-rating-drivers', { params })
       .then((res) => {
         setMetrics(res.data?.metrics || null);
 
@@ -23,7 +30,7 @@ const HighRatingDrivers = () => {
         console.error('Eroare high rating drivers:', err);
         setError('Nu s-a putut încărca analiza.');
       });
-  }, []);
+  }, [filters.dayFilter, filters.timeFilter]);
 
   return (
     <SectionCard

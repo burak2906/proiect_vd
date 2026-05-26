@@ -10,12 +10,18 @@ import {
   Tooltip
 } from 'recharts';
 
-const ValueDrivers = () => {
+const ValueDrivers = ({ filters = {} }) => {
   const [metrics, setMetrics] = useState(null);
   const [drivers, setDrivers] = useState([]);
 
   useEffect(() => {
-    api.get('/analytics/value-drivers')
+    setMetrics(null);
+
+    const params = {};
+    if (filters.dayFilter)  params.day_type   = filters.dayFilter;
+    if (filters.timeFilter) params.order_time = filters.timeFilter;
+
+    api.get('/analytics/value-drivers', { params })
       .then((res) => {
         setMetrics(res.data.metrics);
 
@@ -27,7 +33,7 @@ const ValueDrivers = () => {
         setDrivers(formatted);
       })
       .catch((err) => console.error('Eroare value drivers:', err));
-  }, []);
+  }, [filters.dayFilter, filters.timeFilter]);
 
   return (
     <SectionCard

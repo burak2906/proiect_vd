@@ -10,15 +10,19 @@ import {
   Tooltip
 } from 'recharts';
 
-const RepeatOrderFactors = () => {
+const RepeatOrderFactors = ({ filters = {} }) => {
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Folosim endpointul care returneaza top_features din decision tree
-    api.get('/analytics/decision-tree-repeat-order')
+    setLoading(true);
+
+    const params = {};
+    if (filters.dayFilter)  params.day_type   = filters.dayFilter;
+    if (filters.timeFilter) params.order_time = filters.timeFilter;
+
+    api.get('/analytics/decision-tree-repeat-order', { params })
       .then((res) => {
-        // backend: res.data.top_features = [{ feature, importance }, ...]
         const formatted = (res.data.top_features || []).map((item) => ({
           factor: item.feature,
           importance: Number((item.importance * 100).toFixed(2))
@@ -30,7 +34,7 @@ const RepeatOrderFactors = () => {
         console.error('Eroare repeat order factors:', err);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [filters.dayFilter, filters.timeFilter]);
 
   return (
     <SectionCard

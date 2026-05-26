@@ -1,9 +1,10 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from typing import List
+from typing import List, Optional
 import pandas as pd
 import numpy as np
+import threading
 
 from sklearn.tree import DecisionTreeClassifier, export_text
 from sklearn.linear_model import LogisticRegression
@@ -223,6 +224,16 @@ def load_orders_dataframe(db: Session) -> pd.DataFrame:
     return df
 
 
+def apply_filters(df: pd.DataFrame, day_type: Optional[str], order_time: Optional[str]) -> pd.DataFrame:
+    if day_type:
+        df = df[df["day_type"] == day_type]
+    if order_time:
+        df = df[df["order_time"] == order_time]
+    if df.empty:
+        raise HTTPException(status_code=404, detail="Nu există date pentru filtrele selectate")
+    return df
+
+
 def encode_features(df: pd.DataFrame, feature_cols: list[str]) -> pd.DataFrame:
     X = df[feature_cols].copy()
     cat_cols = X.select_dtypes(include=["object"]).columns.tolist()
@@ -252,8 +263,13 @@ def prepare_single_input(payload_dict: dict, reference_columns: list[str]) -> pd
 # =========================
 
 @app.get("/analytics/business-summary", response_model=schemas.BusinessSummaryOut)
-def business_summary(db: Session = Depends(get_db)):
+def business_summary(
+    day_type: Optional[str] = Query(None),
+    order_time: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
     df = load_orders_dataframe(db)
+    df = apply_filters(df, day_type, order_time)
 
     return {
         "total_orders": int(len(df)),
@@ -267,8 +283,13 @@ def business_summary(db: Session = Depends(get_db)):
 
 
 @app.get("/analytics/decision-tree-repeat-order", response_model=schemas.DecisionTreeAnalyticsOut)
-def decision_tree_repeat_order(db: Session = Depends(get_db)):
+def decision_tree_repeat_order(
+    day_type: Optional[str] = Query(None),
+    order_time: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
     df = load_orders_dataframe(db)
+    df = apply_filters(df, day_type, order_time)
 
     feature_cols = [
         "age", "order_value", "delivery_fee", "time_taken_to_order",
@@ -321,8 +342,13 @@ def decision_tree_repeat_order(db: Session = Depends(get_db)):
 
 
 @app.get("/analytics/repeat-order-probability", response_model=schemas.LogisticAnalyticsOut)
-def repeat_order_probability(db: Session = Depends(get_db)):
+def repeat_order_probability(
+    day_type: Optional[str] = Query(None),
+    order_time: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
     df = load_orders_dataframe(db)
+    df = apply_filters(df, day_type, order_time)
 
     feature_cols = [
         "age", "order_value", "delivery_fee", "time_taken_to_order",
@@ -363,9 +389,15 @@ def repeat_order_probability(db: Session = Depends(get_db)):
         "factors_decreasing_repeat_probability": negative_df.head(12).to_dict(orient="records")
     }
 
+
 @app.get("/analytics/high-rating-drivers", response_model=schemas.HighRatingDriversOut)
-def high_rating_drivers(db: Session = Depends(get_db)):
+def high_rating_drivers(
+    day_type: Optional[str] = Query(None),
+    order_time: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
     df = load_orders_dataframe(db)
+    df = apply_filters(df, day_type, order_time)
 
     df["high_rating"] = (df["rating_given"] >= 4).astype(int)
 
@@ -421,9 +453,15 @@ def high_rating_drivers(db: Session = Depends(get_db)):
         "top_risk_factors": importance_df.head(12).to_dict(orient="records")
     }
 
+
 @app.get("/analytics/delivery-time-model", response_model=schemas.DeliveryTimeAnalyticsOut)
-def delivery_time_model(db: Session = Depends(get_db)):
+def delivery_time_model(
+    day_type: Optional[str] = Query(None),
+    order_time: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
     df = load_orders_dataframe(db)
+    df = apply_filters(df, day_type, order_time)
 
     feature_cols = [
         "age", "order_value", "delivery_fee",
@@ -479,8 +517,13 @@ def delivery_time_model(db: Session = Depends(get_db)):
 
 
 @app.get("/analytics/value-drivers", response_model=schemas.ValueDriversOut)
-def value_drivers(db: Session = Depends(get_db)):
+def value_drivers(
+    day_type: Optional[str] = Query(None),
+    order_time: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
     df = load_orders_dataframe(db)
+    df = apply_filters(df, day_type, order_time)
 
     feature_cols = [
         "age", "delivery_fee", "time_taken_to_order",
@@ -530,11 +573,7 @@ def value_drivers(db: Session = Depends(get_db)):
 # =========================
 # PREDICTIONS
 # =========================
-from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import LabelEncoder
-import threading
 
-# Cache global — antrenat o singură dată
 _repeat_model = None
 _repeat_columns = None
 _model_lock = threading.Lock()
@@ -609,3 +648,18 @@ def predict_delivery_time(payload: schemas.DeliveryTimePredictionInput, db: Sess
     input_encoded = prepare_single_input(payload.model_dump(), columns)
     prediction = model.predict(input_encoded)[0]
     return {"predicted_time_taken_to_order": round(float(prediction), 2)}
+
+
+# =========================
+# INVALIDATE CACHE
+# =========================
+
+@app.post("/predict/invalidate-cache")
+def invalidate_cache():
+    global _repeat_model, _repeat_columns, _delivery_model, _delivery_columns
+    with _model_lock:
+        _repeat_model = None
+        _repeat_columns = None
+        _delivery_model = None
+        _delivery_columns = None
+    return {"message": "Cache invalidat. Modelele se vor reantrena la următorul request."}

@@ -3,14 +3,18 @@ import api from '../../services/api';
 import KpiCard from '../../components/KpiCard';
 import SectionCard from '../../components/SectionCard';
 
-const BusinessSummary = () => {
+const BusinessSummary = ({ filters = {} }) => {
   const [data, setData] = useState(null);
 
   useEffect(() => {
-    api.get('/analytics/business-summary')
+    const params = {};
+    if (filters.dayFilter)  params.day_type   = filters.dayFilter;
+    if (filters.timeFilter) params.order_time = filters.timeFilter;
+
+    api.get('/analytics/business-summary', { params })
       .then((res) => setData(res.data))
-      .catch((err) => console.error('Eroare business summary:', err));
-  }, []);
+      .catch((err) => console.error(err));
+  }, [filters.dayFilter, filters.timeFilter]);
 
   if (!data) {
     return (

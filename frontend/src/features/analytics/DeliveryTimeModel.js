@@ -12,14 +12,21 @@ import {
   Scatter
 } from 'recharts';
 
-const DeliveryTimeModel = () => {
+const DeliveryTimeModel = ({ filters = {} }) => {
   const [metrics, setMetrics] = useState(null);
   const [drivers, setDrivers] = useState([]);
   const [sample, setSample] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get('/analytics/delivery-time-model')
+    setLoading(true);
+    setMetrics(null);
+
+    const params = {};
+    if (filters.dayFilter)  params.day_type   = filters.dayFilter;
+    if (filters.timeFilter) params.order_time = filters.timeFilter;
+
+    api.get('/analytics/delivery-time-model', { params })
       .then((res) => {
         setMetrics(res.data.metrics || null);
 
@@ -33,7 +40,7 @@ const DeliveryTimeModel = () => {
       })
       .catch((err) => console.error('Eroare delivery model:', err))
       .finally(() => setLoading(false));
-  }, []);
+  }, [filters.dayFilter, filters.timeFilter]);
 
   return (
     <SectionCard
