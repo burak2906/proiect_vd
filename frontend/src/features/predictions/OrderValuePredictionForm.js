@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect} from 'react';
 
 const API = 'http://localhost:8000';
 
@@ -28,7 +28,7 @@ const INITIAL = {
   meal_type: 'Dinner',
 };
 
-export default function OrderValuePredictionForm() {
+export default function OrderValuePredictionForm({ onFormChange }) {
   const [form, setForm]     = useState({ ...INITIAL });
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -36,6 +36,10 @@ export default function OrderValuePredictionForm() {
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
+  useEffect(() => {
+    if (onFormChange) onFormChange(form);
+  }, [form, onFormChange]);
+  
   const handleSubmit = async () => {
     setLoading(true);
     setError(null);

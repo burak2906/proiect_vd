@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import SectionCard from '../../components/SectionCard';
 
-const DeliveryTimePredictionForm = () => {
+const DeliveryTimePredictionForm = ({ onFormChange }) => {
   const [form, setForm] = useState({
     age: 30,
     order_value: 20.0,
@@ -21,6 +21,10 @@ const DeliveryTimePredictionForm = () => {
 
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (onFormChange) onFormChange(form);
+  }, [form, onFormChange]);
 
   const handleChange = (e) => {
     const { name, value, type } = e.target;

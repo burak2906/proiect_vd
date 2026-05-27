@@ -19,6 +19,9 @@ import ValueDrivers from './features/analytics/ValueDrivers';
 import RepeatOrderPredictionForm from './features/predictions/RepeatOrderPredictionForm';
 import DeliveryTimePredictionForm from './features/predictions/DeliveryTimePredictionForm';
 import OrderValuePredictionForm from './features/predictions/OrderValuePredictionForm';
+import RepeatOrderExplorer from './features/predictions/RepeatOrderExplorer';
+import DeliveryTimeExplorer from './features/predictions/DeliveryTimeExplorer';
+import OrderValueExplorer from './features/predictions/OrderValueExplorer';
 
 import OrdersTable from './features/management/OrdersTable';
 import UsersTable from './features/management/UsersTable';
@@ -43,6 +46,11 @@ function App() {
 
   // Filtrele nu se afișează pe paginile de management
   const showFilters = !['Orders', 'Users'].includes(activePage);
+
+  const [repeatForm, setRepeatForm] = useState(null);
+  const [deliveryForm, setDeliveryForm] = useState(null);
+  const [valueForm, setValueForm] = useState(null);
+
 
   const handleExport = () => window.print();
 
@@ -123,11 +131,16 @@ function App() {
           {activePage === 'Predictions' && (
             <>
               <div className="dashboard-grid two-columns">
-                <RepeatOrderPredictionForm />
-                <DeliveryTimePredictionForm />
+                <RepeatOrderPredictionForm onFormChange={setRepeatForm} />
+                <RepeatOrderExplorer formValues={repeatForm} />
               </div>
-              <div className="dashboard-grid single-column">
-                <OrderValuePredictionForm />
+              <div className="dashboard-grid two-columns">
+                <DeliveryTimePredictionForm onFormChange={setDeliveryForm} />
+                <DeliveryTimeExplorer formValues={deliveryForm} />
+              </div>
+              <div className="dashboard-grid two-columns">
+                <OrderValuePredictionForm onFormChange={setValueForm} />
+                <OrderValueExplorer formValues={valueForm} />
               </div>
             </>
           )}
