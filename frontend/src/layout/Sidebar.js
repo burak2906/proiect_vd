@@ -8,6 +8,11 @@ const MENU_ITEMS = [
   { key: 'Predictions', label: 'Predictions', icon: '◎' },
 ];
 
+const MANAGEMENT_ITEMS = [
+  { key: 'Orders', label: 'Comenzi',      icon: '📋' },
+  { key: 'Users',  label: 'Utilizatori',  icon: '👥' },
+];
+
 const Sidebar = ({ activePage, onNavigate }) => {
   return (
     <aside className="sidebar">
@@ -20,7 +25,32 @@ const Sidebar = ({ activePage, onNavigate }) => {
       </div>
 
       <nav className="sidebar-nav">
+        <div style={{
+          fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em',
+          textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)',
+          padding: '0 4px', marginBottom: 4,
+        }}>
+          Analytics
+        </div>
         {MENU_ITEMS.map(({ key, label, icon }) => (
+          <button
+            key={key}
+            className={`nav-item ${activePage === key ? 'active' : ''}`}
+            onClick={() => onNavigate(key)}
+          >
+            <span className="nav-icon">{icon}</span>
+            {label}
+          </button>
+        ))}
+
+        <div style={{
+          fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em',
+          textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)',
+          padding: '0 4px', marginTop: 16, marginBottom: 4,
+        }}>
+          Management
+        </div>
+        {MANAGEMENT_ITEMS.map(({ key, label, icon }) => (
           <button
             key={key}
             className={`nav-item ${activePage === key ? 'active' : ''}`}

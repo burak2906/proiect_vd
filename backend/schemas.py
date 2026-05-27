@@ -234,3 +234,23 @@ class KeyInsightItem(BaseModel):
 class SimpleChartItem(BaseModel):
     label: str
     value: float
+
+class OrderValuePredictionInput(BaseModel):
+    age: int
+    delivery_fee: int
+    time_taken_to_order: int
+    order_time: str
+    day_type: str
+    discount_applied: str
+    restaurant_type: str
+    mood: str
+    hunger_level: str
+    company: str
+    rainy_weather: str
+    cuisine: str
+    meal_type: str
+
+class OrderValuePredictionOut(BaseModel):
+    predicted_order_value: float
+    range_low: float
+    range_high: float

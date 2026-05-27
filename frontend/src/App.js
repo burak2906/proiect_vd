@@ -18,26 +18,33 @@ import ValueDrivers from './features/analytics/ValueDrivers';
 
 import RepeatOrderPredictionForm from './features/predictions/RepeatOrderPredictionForm';
 import DeliveryTimePredictionForm from './features/predictions/DeliveryTimePredictionForm';
+import OrderValuePredictionForm from './features/predictions/OrderValuePredictionForm';
+
+import OrdersTable from './features/management/OrdersTable';
+import UsersTable from './features/management/UsersTable';
 
 const PAGE_TITLES = {
-  Overview:    { eyebrow: 'Dashboard', title: 'Business Overview' },
-  Customers:   { eyebrow: 'Analiză', title: 'Comportament Clienți' },
-  Ratings:     { eyebrow: 'Satisfacție', title: 'Analiza Ratingurilor' },
-  Delivery:    { eyebrow: 'Logistică', title: 'Timp de Livrare' },
+  Overview:    { eyebrow: 'Dashboard',       title: 'Business Overview' },
+  Customers:   { eyebrow: 'Analiză',         title: 'Comportament Clienți' },
+  Ratings:     { eyebrow: 'Satisfacție',     title: 'Analiza Ratingurilor' },
+  Delivery:    { eyebrow: 'Logistică',       title: 'Timp de Livrare' },
   Predictions: { eyebrow: 'Machine Learning', title: 'Predicții' },
+  Orders:      { eyebrow: 'Management',      title: 'Comenzi' },
+  Users:       { eyebrow: 'Management',      title: 'Utilizatori' },
 };
 
 function App() {
   const [activePage, setActivePage] = useState('Overview');
-  const [dayFilter, setDayFilter] = useState('');
+  const [dayFilter, setDayFilter]   = useState('');
   const [timeFilter, setTimeFilter] = useState('');
 
   const { eyebrow, title } = PAGE_TITLES[activePage];
   const filters = { dayFilter, timeFilter };
 
-  const handleExport = () => {
-    window.print();
-  };
+  // Filtrele nu se afișează pe paginile de management
+  const showFilters = !['Orders', 'Users'].includes(activePage);
+
+  const handleExport = () => window.print();
 
   return (
     <div className="app-shell">
@@ -54,39 +61,36 @@ function App() {
         <Topbar
           eyebrow={eyebrow}
           title={title}
-          dayFilter={dayFilter}
-          timeFilter={timeFilter}
-          onDayFilter={setDayFilter}
-          onTimeFilter={setTimeFilter}
+          dayFilter={showFilters ? dayFilter : ''}
+          timeFilter={showFilters ? timeFilter : ''}
+          onDayFilter={showFilters ? setDayFilter : () => {}}
+          onTimeFilter={showFilters ? setTimeFilter : () => {}}
           onExport={handleExport}
+          showFilters={showFilters}
         />
 
         <main className="dashboard-content">
 
           {activePage === 'Overview' && (
-              <>
-                <BusinessSummary filters={filters} />
-
-                <div className="dashboard-grid single-column">
-                  <KeyInsights filters={filters} />
-                </div>
-
-                <div className="dashboard-grid two-columns">
-                  <AvgOrderValueByCuisine filters={filters} />
-                  <AvgOrderValueByCity filters={filters} />
-                </div>
-
-                <div className="dashboard-grid two-columns">
-                  <AvgOrderValueByMood filters={filters} />
-                  <AvgRatingByRepeatOrder filters={filters} />
-                </div>
-
-                <div className="dashboard-grid two-columns">
-                  <RepeatOrderFactors filters={filters} />
-                  <ValueDrivers filters={filters} />
-                </div>
-              </>
-            )}
+            <>
+              <BusinessSummary filters={filters} />
+              <div className="dashboard-grid single-column">
+                <KeyInsights filters={filters} />
+              </div>
+              <div className="dashboard-grid two-columns">
+                <AvgOrderValueByCuisine filters={filters} />
+                <AvgOrderValueByCity filters={filters} />
+              </div>
+              <div className="dashboard-grid two-columns">
+                <AvgOrderValueByMood filters={filters} />
+                <AvgRatingByRepeatOrder filters={filters} />
+              </div>
+              <div className="dashboard-grid two-columns">
+                <RepeatOrderFactors filters={filters} />
+                <ValueDrivers filters={filters} />
+              </div>
+            </>
+          )}
 
           {activePage === 'Customers' && (
             <>
@@ -117,11 +121,29 @@ function App() {
           )}
 
           {activePage === 'Predictions' && (
-            <div className="dashboard-grid two-columns">
-              <RepeatOrderPredictionForm />
-              <DeliveryTimePredictionForm />
+            <>
+              <div className="dashboard-grid two-columns">
+                <RepeatOrderPredictionForm />
+                <DeliveryTimePredictionForm />
+              </div>
+              <div className="dashboard-grid single-column">
+                <OrderValuePredictionForm />
+              </div>
+            </>
+          )}
+
+          {activePage === 'Orders' && (
+            <div className="dashboard-grid single-column">
+              <OrdersTable />
             </div>
           )}
+
+          {activePage === 'Users' && (
+            <div className="dashboard-grid single-column">
+              <UsersTable />
+            </div>
+          )}
+
         </main>
       </div>
     </div>

@@ -809,7 +809,50 @@ def predict_delivery_time(payload: schemas.DeliveryTimePredictionInput, db: Sess
     prediction = model.predict(input_encoded)[0]
     return {"predicted_time_taken_to_order": round(float(prediction), 2)}
 
-
+_value_model = None
+_value_columns = None
+ 
+VALUE_FEATURE_COLS = [
+    "age", "delivery_fee", "time_taken_to_order",
+    "order_time", "day_type", "discount_applied",
+    "restaurant_type", "mood", "hunger_level",
+    "company", "rainy_weather", "cuisine", "meal_type"
+]
+ 
+def get_value_model(db: Session):
+    global _value_model, _value_columns
+    with _model_lock:
+        if _value_model is None:
+            df = load_orders_dataframe(db)
+            X = encode_features(df, VALUE_FEATURE_COLS)
+            y = df["order_value"]
+            model = RandomForestRegressor(
+                n_estimators=150,
+                max_depth=10,
+                min_samples_leaf=20,
+                random_state=42
+            )
+            model.fit(X, y)
+            _value_model = model
+            _value_columns = list(X.columns)
+    return _value_model, _value_columns
+ 
+ 
+@app.post("/predict/order-value", response_model=schemas.OrderValuePredictionOut)
+def predict_order_value(payload: schemas.OrderValuePredictionInput, db: Session = Depends(get_db)):
+    model, columns = get_value_model(db)
+    input_encoded = prepare_single_input(payload.model_dump(), columns)
+ 
+    # Predicție + interval estimat (std din arbori individuali)
+    predictions = [tree.predict(input_encoded)[0] for tree in model.estimators_]
+    predicted = float(np.mean(predictions))
+    std = float(np.std(predictions))
+ 
+    return {
+        "predicted_order_value": round(predicted, 2),
+        "range_low": round(max(100, predicted - std), 2),
+        "range_high": round(min(999, predicted + std), 2),
+    }
 # =========================
 # INVALIDATE CACHE
 # =========================
@@ -822,4 +865,6 @@ def invalidate_cache():
         _repeat_columns = None
         _delivery_model = None
         _delivery_columns = None
+        _value_model = None
+        _value_columns = None
     return {"message": "Cache invalidat. Modelele se vor reantrena la următorul request."}
